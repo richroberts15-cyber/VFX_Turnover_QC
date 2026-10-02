@@ -1,0 +1,2287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VFX Turnover QC</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: #111418;
+            color: #f1f3f5;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 60px 30px;
+        }
+
+        h1 {
+            margin: 0 0 5px;
+            font-size: 32px;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            color: #8b949e;
+            margin-bottom: 45px;
+        }
+
+        .panel {
+            background: #1a1e23;
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            padding: 30px;
+        }
+
+        .workflow {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .workflow button {
+            flex: 1;
+            padding: 14px;
+            background: #20252b;
+            color: #f1f3f5;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .workflow button.active {
+            border-color: #58a6ff;
+            color: #58a6ff;
+        }
+
+        .label {
+            color: #f1f3f5;
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .drop-zone {
+            border: 1px dashed #586069;
+            border-radius: 8px;
+            padding: 35px;
+            text-align: center;
+            margin-bottom: 20px;
+            color: #8b949e;
+            cursor: pointer;
+            transition: 0.15s ease;
+        }
+
+        .drop-zone:hover,
+        .drop-zone.dragover {
+            border-color: #58a6ff;
+            background: #20252b;
+            color: #f1f3f5;
+        }
+
+        .drop-zone.loaded {
+            border-style: solid;
+            border-color: #3fb950;
+            color: #3fb950;
+        }
+
+        .drop-title {
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+
+        .drop-hint {
+            font-size: 13px;
+        }
+
+        .filename {
+            color: #f1f3f5;
+            font-family: monospace;
+            margin-top: 7px;
+            word-break: break-all;
+        }
+
+        .run-button {
+            width: 100%;
+            margin-top: 15px;
+            padding: 16px;
+            background: #f1f3f5;
+            color: #111418;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .run-button:hover {
+            background: #ffffff;
+        }
+
+        .run-button:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        .results {
+            margin-top: 30px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            padding: 24px;
+            color: #d7dce1;
+            min-height: 70px;
+            box-sizing: border-box;
+        }
+
+        .qc-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 22px;
+        }
+
+        .qc-title {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: #ffffff;
+        }
+
+        .qc-status {
+            display: inline-flex;
+            align-items: center;
+            padding: 7px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .qc-status.pass {
+            background: #163b2a;
+            color: #6ee7a0;
+            border: 1px solid #286844;
+        }
+
+        .qc-status.fail {
+            background: #451d22;
+            color: #ff8b94;
+            border: 1px solid #79323a;
+        }
+
+        .qc-stats {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        .qc-stat {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 7px;
+            padding: 14px;
+        }
+
+        .qc-stat-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #8b949e;
+            margin-bottom: 6px;
+        }
+
+        .qc-stat-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .qc-section-title {
+            margin: 20px 0 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #30363d;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            color: #8b949e;
+        }
+
+        .qc-shot {
+            padding: 12px 0;
+            border-bottom: 1px solid #21262d;
+        }
+
+        .qc-shot-name {
+            font-family: monospace;
+            font-size: 13px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 0;
+            display: inline !important;
+        }
+
+        .qc-ok {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #6ee7a0;
+            font-family: monospace;
+            font-size: 12px;
+            margin: 4px 0;
+        }
+
+        .qc-missing {
+            display: inline !important;
+            color: #ff8b94;
+            font-family: monospace;
+            font-size: 12px;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .qc-status-dot {
+            color: #6ee7a0;
+            font-size: 10px;
+        }
+
+        .qc-element {
+            min-width: 55px;
+            color: #d7dce1;
+        }
+
+        .qc-ok-label {
+            color: #6ee7a0;
+            font-weight: 700;
+        }
+
+        .qc-missing-dot {
+            color: #ff8b94;
+            font-size: 10px;
+        }
+
+        .qc-unrequested {
+            display: flex !important;
+            align-items: center !important;
+            gap: 4px !important;
+            white-space: nowrap !important;
+            color: #e8c36a;
+            font-family: monospace;
+            font-size: 12px;
+            margin: 3px 0;
+        }
+
+        @media (max-width: 700px) {
+            .qc-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .qc-header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+        }
+
+        .privacy {
+            margin-top: 20px;
+            text-align: center;
+            color: #586069;
+            font-size: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>VFX TURNOVER QC</h1>
+
+    <div class="subtitle">
+        Editorial Turnover &amp; DI Send Verification
+    </div>
+
+    <div class="panel">
+
+        <div class="workflow">
+            <button
+                id="vendorButton"
+                class="active"
+                onclick="setWorkflow('vendor')"
+            >
+                VENDOR TURNOVER
+            </button>
+
+            <button
+                id="diButton"
+                onclick="setWorkflow('di')"
+            >
+                DI SEND
+            </button>
+        </div>
+
+        <div class="label">REQUEST FILE</div>
+
+        <div
+            id="requestZone"
+            class="drop-zone"
+            onclick="requestInput.click()"
+        >
+            <div class="drop-title">
+                Drop Excel / TXT request here
+            </div>
+
+            <div class="drop-hint">
+                or click to choose a file
+            </div>
+
+            <div
+                id="requestFilename"
+                class="filename"
+            ></div>
+        </div>
+
+        <input
+            id="requestInput"
+            type="file"
+            accept=".xlsx,.xls,.txt,.csv"
+            hidden
+        >
+
+        <div class="label">ACTUAL SEND</div>
+
+        <div
+            id="actualZone"
+            class="drop-zone"
+            onclick="actualInput.click()"
+        >
+            <div class="drop-title">
+                Drop ALE / TAB / EDL here
+            </div>
+
+            <div class="drop-hint">
+                or click to choose a file
+            </div>
+
+            <div
+                id="actualFilename"
+                class="filename"
+            ></div>
+        </div>
+
+        <input
+            id="actualInput"
+            type="file"
+            accept=".ale,.tab,.txt,.edl"
+            hidden
+        >
+
+        <button
+            id="runButton"
+            class="run-button"
+            disabled
+        >
+            RUN QC
+        </button>
+
+        <div
+            style="
+                display: flex;
+                justify-content: flex-end;
+                margin: 14px 0 14px 0;
+            "
+        >
+            <button
+                id="downloadQCButton"
+                type="button"
+                onclick="downloadQCExcel()"
+                style="
+                    display: none;
+                    padding: 9px 16px;
+                    font-size: 13px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    background: #151a21;
+                    color: #4da3ff;
+                    border: 1px solid #4da3ff;
+                    border-radius: 6px;
+                    letter-spacing: 0.2px;
+                "
+            >
+                DOWNLOAD QC REPORT
+            </button>
+        </div>
+
+        <div
+            id="results"
+            class="results"
+        >
+            Select a request file and actual send to begin.
+        </div>
+
+        <div class="privacy">
+            Files remain on your computer during this test build.
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<script src="xlsx.full.min.js"></script>
+<script src="qc.js?v=20261002"></script>
+
+<script>
+    let workflow = "vendor";
+    let requestFile = null;
+    let actualFile = null;
+
+    const vendorButton =
+        document.getElementById("vendorButton");
+
+    const diButton =
+        document.getElementById("diButton");
+
+    const requestZone =
+        document.getElementById("requestZone");
+
+    const actualZone =
+        document.getElementById("actualZone");
+
+    const requestInput =
+        document.getElementById("requestInput");
+
+    const actualInput =
+        document.getElementById("actualInput");
+
+    const requestFilename =
+        document.getElementById("requestFilename");
+
+    const actualFilename =
+        document.getElementById("actualFilename");
+
+    const runButton =
+        document.getElementById("runButton");
+
+    const results =
+        document.getElementById("results");
+
+
+    function setWorkflow(selectedWorkflow) {
+
+        workflow = selectedWorkflow;
+
+        vendorButton.classList.toggle(
+            "active",
+            workflow === "vendor"
+        );
+
+        diButton.classList.toggle(
+            "active",
+            workflow === "di"
+        );
+
+        results.textContent =
+            workflow === "vendor"
+                ? "Vendor Turnover mode selected."
+                : "DI Send mode selected.";
+    }
+
+
+    function updateRunButton() {
+
+        runButton.disabled =
+            !(requestFile && actualFile);
+    }
+
+
+    function setRequestFile(file) {
+
+        if (!file) {
+            return;
+        }
+
+        requestFile = file;
+
+        requestFilename.textContent =
+            "✓ " + file.name;
+
+        requestZone.classList.add("loaded");
+
+        updateRunButton();
+    }
+
+
+    function setActualFile(file) {
+
+        if (!file) {
+            return;
+        }
+
+        actualFile = file;
+
+        actualFilename.textContent =
+            "✓ " + file.name;
+
+        actualZone.classList.add("loaded");
+
+        updateRunButton();
+    }
+
+
+    requestInput.addEventListener(
+        "change",
+        function () {
+            setRequestFile(
+                requestInput.files[0]
+            );
+        }
+    );
+
+
+    actualInput.addEventListener(
+        "change",
+        function () {
+            setActualFile(
+                actualInput.files[0]
+            );
+        }
+    );
+
+
+    function enableDropZone(
+        zone,
+        fileHandler
+    ) {
+
+        zone.addEventListener(
+            "dragover",
+            function (event) {
+                event.preventDefault();
+                zone.classList.add("dragover");
+            }
+        );
+
+        zone.addEventListener(
+            "dragleave",
+            function () {
+                zone.classList.remove("dragover");
+            }
+        );
+
+        zone.addEventListener(
+            "drop",
+            function (event) {
+
+                event.preventDefault();
+
+                zone.classList.remove(
+                    "dragover"
+                );
+
+                const file =
+                    event.dataTransfer.files[0];
+
+                fileHandler(file);
+            }
+        );
+    }
+
+
+    enableDropZone(
+        requestZone,
+        setRequestFile
+    );
+
+    enableDropZone(
+        actualZone,
+        setActualFile
+    );
+
+
+    function showColumnChooser(candidates, onChoose) {
+
+        const overlay = document.createElement("div");
+
+        overlay.style.position = "fixed";
+        overlay.style.inset = "0";
+        overlay.style.background = "rgba(0, 0, 0, 0.65)";
+        overlay.style.display = "flex";
+        overlay.style.alignItems = "center";
+        overlay.style.justifyContent = "center";
+        overlay.style.zIndex = "9999";
+
+        const dialog = document.createElement("div");
+
+        dialog.style.width = "520px";
+        dialog.style.maxWidth = "90%";
+        dialog.style.background = "#1B2026";
+        dialog.style.border = "1px solid #343A40";
+        dialog.style.borderRadius = "10px";
+        dialog.style.padding = "24px";
+        dialog.style.boxSizing = "border-box";
+
+        const title = document.createElement("div");
+        title.textContent = "SELECT SHOT COLUMN";
+        title.style.fontSize = "16px";
+        title.style.fontWeight = "bold";
+        title.style.color = "#FFFFFF";
+        title.style.marginBottom = "8px";
+
+        dialog.appendChild(title);
+
+        const description = document.createElement("div");
+        description.textContent =
+            "Multiple columns contain valid shot names. Choose the column to use.";
+        description.style.fontSize = "13px";
+        description.style.color = "#AAB2BB";
+        description.style.marginBottom = "18px";
+
+        dialog.appendChild(description);
+
+        const selection = document.createElement("select");
+
+        selection.style.width = "100%";
+        selection.style.padding = "10px";
+        selection.style.background = "#252B32";
+        selection.style.color = "#FFFFFF";
+        selection.style.border = "1px solid #444C55";
+        selection.style.borderRadius = "6px";
+
+        candidates.forEach(function(candidate, index) {
+
+            const option = document.createElement("option");
+
+            option.value = index;
+
+            option.textContent =
+                "Column " +
+                String.fromCharCode(65 + candidate.column) +
+                " — " +
+                candidate.values.length +
+                " shots";
+
+            selection.appendChild(option);
+        });
+
+        dialog.appendChild(selection);
+
+        const preview = document.createElement("pre");
+
+        preview.style.marginTop = "14px";
+        preview.style.padding = "12px";
+        preview.style.background = "#111418";
+        preview.style.color = "#D7DCE1";
+        preview.style.borderRadius = "6px";
+        preview.style.fontSize = "12px";
+        preview.style.maxHeight = "150px";
+        preview.style.overflow = "auto";
+        preview.style.whiteSpace = "pre-wrap";
+
+        function updatePreview() {
+
+            const candidate =
+                candidates[Number(selection.value)];
+
+            preview.textContent =
+                candidate.values.slice(0, 10).join("\n");
+
+            if (candidate.values.length > 10) {
+                preview.textContent += "\n...";
+            }
+        }
+
+        selection.addEventListener(
+            "change",
+            updatePreview
+        );
+
+        dialog.appendChild(preview);
+
+        const buttons = document.createElement("div");
+
+        buttons.style.display = "flex";
+        buttons.style.justifyContent = "flex-end";
+        buttons.style.gap = "10px";
+        buttons.style.marginTop = "20px";
+
+        const cancel = document.createElement("button");
+
+        cancel.textContent = "CANCEL";
+        cancel.style.padding = "9px 18px";
+        cancel.style.border = "0";
+        cancel.style.borderRadius = "5px";
+        cancel.style.background = "#343A40";
+        cancel.style.color = "#FFFFFF";
+        cancel.style.cursor = "pointer";
+
+        cancel.onclick = function() {
+            overlay.remove();
+        };
+
+        const useColumn = document.createElement("button");
+
+        useColumn.textContent = "USE COLUMN";
+        useColumn.style.padding = "9px 18px";
+        useColumn.style.border = "0";
+        useColumn.style.borderRadius = "5px";
+        useColumn.style.background = "#D6A84F";
+        useColumn.style.color = "#111418";
+        useColumn.style.fontWeight = "bold";
+        useColumn.style.cursor = "pointer";
+
+        useColumn.onclick = function() {
+
+            const candidate =
+                candidates[Number(selection.value)];
+
+            overlay.remove();
+
+            onChoose(candidate.values);
+        };
+
+        buttons.appendChild(cancel);
+        buttons.appendChild(useColumn);
+
+        dialog.appendChild(buttons);
+
+        overlay.appendChild(dialog);
+
+        document.body.appendChild(overlay);
+
+        updatePreview();
+    }
+
+
+
+    function renderQCReport(output) {
+
+        results.innerHTML = "";
+
+        const lines =
+            output.split(/\r?\n/);
+
+        const requested =
+            Number(
+                (output.match(
+                    /Requested shots:\s+(\d+)/
+                ) || [])[1] || 0
+            );
+
+        const found =
+            Number(
+                (output.match(
+                    /Shots found:\s+(\d+)/
+                ) || [])[1] || 0
+            );
+
+        const missing =
+            Number(
+                (output.match(
+                    /Missing shots:\s+(\d+)/
+                ) || [])[1] || 0
+            );
+
+        const unrequested =
+            Number(
+                (output.match(
+                    /Unrequested:\s+(\d+)/
+                ) || [])[1] || 0
+            );
+
+        const duplicates =
+            Number(
+                (output.match(
+                    /Duplicates:\s+(\d+)/
+                ) || [])[1] || 0
+            );
+
+        const passed =
+            missing === 0 &&
+            unrequested === 0 &&
+            duplicates === 0;
+
+        const header =
+            document.createElement("div");
+
+        header.className = "qc-header";
+
+        const title =
+            document.createElement("div");
+
+        title.className = "qc-title";
+        title.textContent =
+            "VFX TURNOVER QC";
+
+        const status =
+            document.createElement("div");
+
+        status.className =
+            "qc-status " +
+            (passed ? "pass" : "fail");
+
+        status.textContent =
+            passed ? "QC PASSED" : "QC ISSUES FOUND";
+
+        header.appendChild(title);
+        header.appendChild(status);
+
+        results.appendChild(header);
+
+
+        const stats =
+            document.createElement("div");
+
+        stats.className = "qc-stats";
+
+        const statItems = [
+            ["Requested", requested],
+            ["Found", found],
+            ["Missing", missing],
+            ["Unrequested", unrequested],
+            ["Duplicates", duplicates]
+        ];
+
+        statItems.forEach(function(item) {
+
+            const card =
+                document.createElement("div");
+
+            card.className = "qc-stat";
+
+            const label =
+                document.createElement("div");
+
+            label.className =
+                "qc-stat-label";
+
+            label.textContent =
+                item[0];
+
+            const value =
+                document.createElement("div");
+
+            value.className =
+                "qc-stat-value";
+
+            value.textContent =
+                item[1];
+
+            card.appendChild(label);
+            card.appendChild(value);
+
+            stats.appendChild(card);
+        });
+
+        results.appendChild(stats);
+
+
+        const detailsTitle =
+            document.createElement("div");
+
+        detailsTitle.className =
+            "qc-section-title";
+
+        detailsTitle.textContent =
+            "SHOT DETAILS";
+
+        results.appendChild(detailsTitle);
+
+
+        let inShotDetails = false;
+        let inUnrequested = false;
+
+        lines.forEach(function(line) {
+
+            const trimmed =
+                line.trim();
+
+            if (trimmed === "SHOT DETAILS") {
+                inShotDetails = true;
+                return;
+            }
+
+            if (trimmed === "UNREQUESTED SHOTS") {
+                inShotDetails = false;
+                inUnrequested = true;
+                return;
+            }
+
+            if (
+                trimmed === "" ||
+                trimmed.startsWith("=") ||
+                trimmed.startsWith("-") ||
+                trimmed === "VFX TURNOVER QC" ||
+                trimmed.startsWith("Requested shots:") ||
+                trimmed.startsWith("Shots found:") ||
+                trimmed.startsWith("Missing shots:") ||
+                trimmed.startsWith("Unrequested:") ||
+                trimmed.startsWith("Duplicates:")
+            ) {
+                return;
+            }
+
+            if (inShotDetails) {
+
+                const shotMatch =
+                    trimmed !== "MISSING" &&
+                    !trimmed.startsWith("OK") &&
+                    trimmed.match(
+                        /^([A-Za-z0-9_-]+)$/
+                    );
+
+                if (shotMatch) {
+
+                    const shot =
+                        document.createElement("div");
+
+                    shot.className =
+                        "qc-shot";
+
+                    shot.dataset.shotName =
+                        trimmed;
+
+                    shot.innerHTML =
+                        "<span class=\"qc-shot-name\">" +
+                        trimmed +
+                        "</span>";
+
+                    results.appendChild(shot);
+
+                    return;
+                }
+
+                if (trimmed === "MISSING") {
+
+                    const lastShot =
+                        results.lastElementChild;
+
+                    if (lastShot) {
+
+                        lastShot.innerHTML =
+                            "<span class=\"qc-shot-name\">" +
+                            lastShot.dataset.shotName +
+                            "</span>" +
+                            "<span> — </span>" +
+                            "<span class=\"qc-missing\">MISSING</span>";
+                    }
+
+                    return;
+                }
+
+                if (trimmed.startsWith("OK")) {
+
+                    const lastShot =
+                        results.lastElementChild;
+
+                    if (lastShot) {
+
+                        const okParts =
+                            trimmed.match(
+                                /^OK\s+(.+)$/
+                            );
+
+                        const result =
+                            okParts
+                                ? okParts[1]
+                                : "OK";
+
+                        const separator =
+                            document.createElement("span");
+
+                        separator.textContent =
+                            " — ";
+
+                        const element =
+                            document.createElement("span");
+
+                        element.className =
+                            "qc-element";
+
+                        element.textContent =
+                            result;
+
+                        const okLabel =
+                            document.createElement("span");
+
+                        okLabel.className =
+                            "qc-ok-label";
+
+                        okLabel.textContent =
+                            "OK";
+
+                        lastShot.appendChild(separator);
+                        lastShot.appendChild(element);
+                        lastShot.appendChild(
+                            document.createTextNode(" — ")
+                        );
+                        lastShot.appendChild(okLabel);
+                    }
+
+                    return;
+                }
+            }
+
+            if (inUnrequested &&
+                trimmed.startsWith("UNREQUESTED")) {
+
+                if (!results.querySelector(".qc-unrequested-marker")) {
+
+                    const heading =
+                        document.createElement("div");
+
+                    heading.className =
+                        "qc-section-title qc-unrequested-marker";
+
+                    heading.textContent =
+                        "UNREQUESTED SHOTS";
+
+                    results.appendChild(
+                        heading
+                    );
+                }
+
+                const name =
+                    trimmed
+                        .replace(
+                            /^UNREQUESTED\s+/,
+                            ""
+                        )
+                        .trim();
+
+                const lineElement =
+                    document.createElement("div");
+
+                lineElement.className =
+                    "qc-unrequested";
+
+                lineElement.innerHTML =
+                    "<span class=\"qc-shot-name\">" +
+                    name +
+                    "</span>" +
+                    "<span> — </span>" +
+                    "<span class=\"qc-missing\">UNREQUESTED</span>";
+
+                results.appendChild(
+                    lineElement
+                );
+            }
+        });
+
+
+        if (inUnrequested) {
+            return;
+        }
+    }
+
+
+
+    function renderDIReport(output) {
+
+        results.innerHTML = "";
+
+        const requested =
+            Number(
+                (output.match(
+                    /Requested entries:\s+(\d+)/
+                ) || [])[1] || 0
+            );
+
+        const actual =
+            Number(
+                (output.match(
+                    /Actual entries:\s+(\d+)/
+                ) || [])[1] || 0
+            );
+
+        const missing =
+            Number(
+                (output.match(
+                    /Missing names:\s+(\d+)/
+                ) || [])[1] || 0
+            );
+
+        const extra =
+            Number(
+                (output.match(
+                    /Extra names:\s+(\d+)/
+                ) || [])[1] || 0
+            );
+
+        const mismatch =
+            Number(
+                (output.match(
+                    /Count mismatches:\s+(\d+)/
+                ) || [])[1] || 0
+            );
+
+        const passed =
+            missing === 0 &&
+            extra === 0 &&
+            mismatch === 0;
+
+
+        /*
+         * Header
+         */
+
+        const header =
+            document.createElement("div");
+
+        header.className =
+            "qc-header";
+
+        const title =
+            document.createElement("div");
+
+        title.className =
+            "qc-title";
+
+        title.textContent =
+            "DI SEND QC";
+
+        const status =
+            document.createElement("div");
+
+        status.className =
+            "qc-status " +
+            (passed ? "pass" : "fail");
+
+        status.textContent =
+            passed
+                ? "QC PASSED"
+                : "QC ISSUES FOUND";
+
+        header.appendChild(title);
+        header.appendChild(status);
+
+        results.appendChild(header);
+
+
+        /*
+         * Summary
+         */
+
+        const stats =
+            document.createElement("div");
+
+        stats.className =
+            "qc-stats";
+
+        [
+            ["Requested", requested],
+            ["Actual", actual],
+            ["Missing", missing],
+            ["Extra", extra],
+            ["Count Mismatch", mismatch]
+        ].forEach(function(item) {
+
+            const card =
+                document.createElement("div");
+
+            card.className =
+                "qc-stat";
+
+            const label =
+                document.createElement("div");
+
+            label.className =
+                "qc-stat-label";
+
+            label.textContent =
+                item[0];
+
+            const value =
+                document.createElement("div");
+
+            value.className =
+                "qc-stat-value";
+
+            value.textContent =
+                item[1];
+
+            card.appendChild(label);
+            card.appendChild(value);
+
+            stats.appendChild(card);
+        });
+
+        results.appendChild(stats);
+
+
+        function addSectionTitle(textValue) {
+
+            const heading =
+                document.createElement("div");
+
+            heading.className =
+                "qc-section-title";
+
+            heading.textContent =
+                textValue;
+
+            results.appendChild(heading);
+        }
+
+
+        addSectionTitle(
+            "REQUESTED DI SEND NAMES"
+        );
+
+
+        const lines =
+            output.split(/\r?\n/);
+
+        let mode =
+            "requested";
+
+        let currentShot =
+            null;
+
+
+        lines.forEach(function(line) {
+
+            const trimmed =
+                line.trim();
+
+            if (!trimmed) {
+                return;
+            }
+
+
+            if (
+                trimmed ===
+                "REQUESTED DI SEND NAMES"
+            ) {
+                mode = "requested";
+                return;
+            }
+
+
+            if (
+                trimmed ===
+                "EXTRA / UNREQUESTED NAMES"
+            ) {
+                mode = "extra";
+
+                addSectionTitle(
+                    "EXTRA / UNREQUESTED NAMES"
+                );
+
+                return;
+            }
+
+
+            if (
+                trimmed === "DI SEND QC" ||
+                trimmed.startsWith("=") ||
+                trimmed.startsWith("-") ||
+                trimmed.startsWith("Requested entries:") ||
+                trimmed.startsWith("Actual entries:") ||
+                trimmed.startsWith("Missing names:") ||
+                trimmed.startsWith("Extra names:") ||
+                trimmed.startsWith("Count mismatches:") ||
+                trimmed.startsWith("Status:")
+            ) {
+                return;
+            }
+
+
+            /*
+             * REQUESTED DI SEND
+             */
+
+            if (mode === "requested") {
+
+                /*
+                 * A new DI send name.
+                 */
+
+                if (
+                    !trimmed.startsWith("MATCH (") &&
+                    trimmed !== "MISSING" &&
+                    !trimmed.startsWith("COUNT MISMATCH")
+                ) {
+
+                    const shot =
+                        document.createElement("div");
+
+                    shot.className =
+                        "qc-shot";
+
+                    shot.style.display =
+                        "flex";
+
+                    shot.style.alignItems =
+                        "baseline";
+
+                    shot.style.gap =
+                        "5px";
+
+                    shot.style.whiteSpace =
+                        "nowrap";
+
+                    const name =
+                        document.createElement("span");
+
+                    name.className =
+                        "qc-shot-name";
+
+                    name.style.marginBottom =
+                        "0";
+
+                    name.textContent =
+                        trimmed;
+
+                    shot.appendChild(name);
+
+                    results.appendChild(shot);
+
+                    currentShot =
+                        shot;
+
+                    return;
+                }
+
+
+                /*
+                 * MATCH
+                 */
+
+                if (
+                    trimmed.startsWith("MATCH (")
+                ) {
+
+                    if (!currentShot) {
+                        return;
+                    }
+
+                    const separator =
+                        document.createElement("span");
+
+                    separator.textContent =
+                        "—";
+
+                    const okText =
+                        document.createElement("span");
+
+                    okText.className =
+                        "qc-ok-label";
+
+                    okText.textContent =
+                        "OK";
+
+                    currentShot.appendChild(
+                        separator
+                    );
+
+                    currentShot.appendChild(
+                        okText
+                    );
+
+                    return;
+                }
+
+
+                /*
+                 * MISSING
+                 */
+
+                if (
+                    trimmed === "MISSING"
+                ) {
+
+                    if (!currentShot) {
+                        return;
+                    }
+
+                    const separator =
+                        document.createElement("span");
+
+                    separator.textContent =
+                        "—";
+
+                    const missingText =
+                        document.createElement("span");
+
+                    missingText.className =
+                        "qc-missing";
+
+                    missingText.style.margin =
+                        "0";
+
+                    missingText.style.display =
+                        "inline";
+
+                    missingText.textContent =
+                        "MISSING";
+
+                    currentShot.appendChild(
+                        separator
+                    );
+
+                    currentShot.appendChild(
+                        missingText
+                    );
+
+                    return;
+                }
+
+
+                /*
+                 * COUNT MISMATCH
+                 */
+
+                if (
+                    trimmed.startsWith(
+                        "COUNT MISMATCH"
+                    )
+                ) {
+
+                    if (!currentShot) {
+                        return;
+                    }
+
+                    const separator =
+                        document.createElement("span");
+
+                    separator.textContent =
+                        "—";
+
+                    const mismatchText =
+                        document.createElement("span");
+
+                    mismatchText.className =
+                        "qc-missing";
+
+                    mismatchText.style.margin =
+                        "0";
+
+                    mismatchText.style.display =
+                        "inline";
+
+                    mismatchText.textContent =
+                        trimmed;
+
+                    currentShot.appendChild(
+                        separator
+                    );
+
+                    currentShot.appendChild(
+                        mismatchText
+                    );
+
+                    return;
+                }
+            }
+
+
+            /*
+             * EXTRA / UNREQUESTED
+             */
+
+            if (mode === "extra") {
+
+                const match =
+                    trimmed.match(
+                        /^(.+?)\s+EXTRA \((\d+)\)$/
+                    );
+
+                if (!match) {
+                    return;
+                }
+
+                const row =
+                    document.createElement("div");
+
+                row.className =
+                    "qc-shot";
+
+                row.style.display =
+                    "flex";
+
+                row.style.alignItems =
+                    "baseline";
+
+                row.style.gap =
+                    "5px";
+
+                row.style.whiteSpace =
+                    "nowrap";
+
+                const name =
+                    document.createElement("span");
+
+                name.className =
+                    "qc-shot-name";
+
+                name.style.marginBottom =
+                    "0";
+
+                name.textContent =
+                    match[1];
+
+                const separator =
+                    document.createElement("span");
+
+                separator.textContent =
+                    "—";
+
+                const extraText =
+                    document.createElement("span");
+
+                extraText.className =
+                    "qc-missing";
+
+                extraText.style.margin =
+                    "0";
+
+                extraText.style.display =
+                    "inline";
+
+                extraText.textContent =
+                    "EXTRA (" +
+                    match[2] +
+                    ")";
+
+                row.appendChild(name);
+                row.appendChild(separator);
+                row.appendChild(extraText);
+
+                results.appendChild(row);
+            }
+        });
+    }
+
+
+    function downloadQCExcel() {
+
+        if (typeof XLSX === "undefined") {
+            alert("Excel export library is not available.");
+            return;
+        }
+
+        const rows = [];
+
+        if (workflow === "di") {
+
+            const data = window.lastDIQCData;
+
+            if (!data) {
+                alert("Run DI SEND QC before downloading.");
+                return;
+            }
+
+            rows.push([
+                "DI SEND QC REPORT",
+                "",
+                ""
+            ]);
+
+            rows.push([
+                "QC SUMMARY",
+                "VALUE",
+                ""
+            ]);
+
+            rows.push([
+                "Status",
+                data.passed ? "QC PASSED" : "QC ISSUES FOUND",
+                ""
+            ]);
+
+            rows.push([
+                "Requested",
+                data.requested,
+                ""
+            ]);
+
+            rows.push([
+                "Actual",
+                data.actual,
+                ""
+            ]);
+
+            rows.push([
+                "Missing",
+                data.missing.length,
+                ""
+            ]);
+
+            rows.push([
+                "Extra",
+                data.extra.length,
+                ""
+            ]);
+
+            rows.push([
+                "Count Mismatch",
+                data.countMismatch.length,
+                ""
+            ]);
+
+            rows.push([]);
+
+            rows.push([
+                "REQUESTED DI SEND NAMES",
+                "RESULT",
+                "STATUS"
+            ]);
+
+            Object.keys(data.requestedCounts).forEach(function(name) {
+
+                const requested =
+                    data.requestedCounts[name];
+
+                const actual =
+                    data.actualCounts[name] || 0;
+
+                if (actual === requested) {
+
+                    rows.push([
+                        name,
+                        "MATCH ×" + actual,
+                        "OK"
+                    ]);
+
+                } else if (actual === 0) {
+
+                    rows.push([
+                        name,
+                        "MISSING",
+                        "MISSING"
+                    ]);
+
+                } else {
+
+                    rows.push([
+                        name,
+                        "COUNT MISMATCH — REQUESTED " +
+                            requested +
+                            ", FOUND " +
+                            actual,
+                        "COUNT MISMATCH"
+                    ]);
+                }
+            });
+
+            if (data.extra.length > 0) {
+
+                rows.push([]);
+
+                rows.push([
+                    "EXTRA / UNREQUESTED NAMES",
+                    "RESULT",
+                    "STATUS"
+                ]);
+
+                data.extra.forEach(function(item) {
+
+                    rows.push([
+                        item.name,
+                        "EXTRA (" + item.actual + ")",
+                        "EXTRA"
+                    ]);
+                });
+            }
+
+        } else {
+
+            const data = window.lastVendorQCData;
+
+            if (!data) {
+                alert("Run Vendor QC before downloading.");
+                return;
+            }
+
+            rows.push([
+                "VFX TURNOVER QC REPORT",
+                "",
+                ""
+            ]);
+
+            rows.push([
+                "QC SUMMARY",
+                "VALUE",
+                ""
+            ]);
+
+            rows.push([
+                "Requested",
+                data.requested,
+                ""
+            ]);
+
+            rows.push([
+                "Found",
+                data.found,
+                ""
+            ]);
+
+            rows.push([
+                "Missing",
+                data.missing.length,
+                ""
+            ]);
+
+            rows.push([
+                "Unrequested",
+                data.unrequested.length,
+                ""
+            ]);
+
+            rows.push([
+                "Duplicates",
+                data.duplicates.length,
+                ""
+            ]);
+
+            rows.push([]);
+
+            rows.push([
+                "SHOT / NAME",
+                "RESULT",
+                "STATUS"
+            ]);
+
+            data.missing.forEach(function(shot) {
+
+                rows.push([
+                    shot,
+                    "MISSING",
+                    "MISSING"
+                ]);
+            });
+
+            data.unrequested.forEach(function(shot) {
+
+                rows.push([
+                    shot,
+                    "UNREQUESTED",
+                    "EXTRA"
+                ]);
+            });
+
+            if (data.duplicates.length > 0) {
+
+                data.duplicates.forEach(function(name) {
+
+                    rows.push([
+                        name,
+                        "DUPLICATE",
+                        "DUPLICATE"
+                    ]);
+                });
+            }
+        }
+
+        const worksheet =
+            XLSX.utils.aoa_to_sheet(rows);
+
+        const workbook =
+            XLSX.utils.book_new();
+
+        XLSX.utils.book_append_sheet(
+            workbook,
+            worksheet,
+            "QC Report"
+        );
+
+        worksheet["!cols"] = [
+            { wch: 48 },
+            { wch: 42 },
+            { wch: 20 }
+        ];
+
+        /*
+         * Excel styling
+         *
+         * Keep DI SEND and VFX TURNOVER visually
+         * consistent with the QC interface.
+         */
+
+        const baseFont = {
+            name: "Arial",
+            sz: 10
+        };
+
+        const titleStyle = {
+            font: {
+                ...baseFont,
+                bold: true,
+                sz: 16
+            },
+            alignment: {
+                vertical: "center"
+            }
+        };
+
+        const sectionStyle = {
+            font: {
+                ...baseFont,
+                bold: true,
+                sz: 11
+            },
+            fill: {
+                patternType: "solid",
+                fgColor: {
+                    rgb: "E7EAED"
+                }
+            },
+            border: {
+                bottom: {
+                    style: "thin",
+                    color: {
+                        rgb: "AAB2BA"
+                    }
+                }
+            },
+            alignment: {
+                vertical: "center"
+            }
+        };
+
+        const headerStyle = {
+            font: {
+                ...baseFont,
+                bold: true
+            },
+            fill: {
+                patternType: "solid",
+                fgColor: {
+                    rgb: "D9DEE3"
+                }
+            },
+            border: {
+                top: {
+                    style: "thin",
+                    color: {
+                        rgb: "AAB2BA"
+                    }
+                },
+                bottom: {
+                    style: "thin",
+                    color: {
+                        rgb: "AAB2BA"
+                    }
+                }
+            },
+            alignment: {
+                vertical: "center"
+            }
+        };
+
+        const normalStyle = {
+            font: {
+                ...baseFont
+            },
+            alignment: {
+                vertical: "center"
+            }
+        };
+
+        const greenStyle = {
+            font: {
+                ...baseFont,
+                bold: true,
+                color: {
+                    rgb: "008000"
+                }
+            },
+            alignment: {
+                vertical: "center"
+            }
+        };
+
+        const redStyle = {
+            font: {
+                ...baseFont,
+                bold: true,
+                color: {
+                    rgb: "C00000"
+                }
+            },
+            alignment: {
+                vertical: "center"
+            }
+        };
+
+        const labelStyle = {
+            font: {
+                ...baseFont,
+                bold: true
+            },
+            alignment: {
+                vertical: "center"
+            }
+        };
+
+
+        for (
+            let row = 0;
+            row < rows.length;
+            row++
+        ) {
+
+            for (
+                let col = 0;
+                col < rows[row].length;
+                col++
+            ) {
+
+                const cell =
+                    worksheet[
+                        XLSX.utils.encode_cell({
+                            r: row,
+                            c: col
+                        })
+                    ];
+
+                if (!cell) {
+                    continue;
+                }
+
+                const value =
+                    String(cell.v ?? "").trim();
+
+                const upper =
+                    value.toUpperCase();
+
+                /*
+                 * Default
+                 */
+
+                cell.s = {
+                    ...normalStyle
+                };
+
+
+                /*
+                 * Report title
+                 */
+
+                if (row === 0) {
+                    cell.s = {
+                        ...titleStyle
+                    };
+                    continue;
+                }
+
+
+                /*
+                 * Section headers
+                 */
+
+                if (
+                    upper === "QC SUMMARY" ||
+                    upper === "REQUESTED DI SEND NAMES" ||
+                    upper === "EXTRA / UNREQUESTED NAMES" ||
+                    upper === "SHOT / NAME"
+                ) {
+                    cell.s = {
+                        ...sectionStyle
+                    };
+                    continue;
+                }
+
+
+                /*
+                 * Table column headers
+                 */
+
+                if (
+                    upper === "RESULT" ||
+                    upper === "STATUS" ||
+                    upper === "VALUE"
+                ) {
+                    cell.s = {
+                        ...headerStyle
+                    };
+                    continue;
+                }
+
+
+                /*
+                 * Green QC results
+                 */
+
+                if (
+                    upper === "OK" ||
+                    upper.startsWith("MATCH")
+                ) {
+                    cell.s = {
+                        ...greenStyle
+                    };
+                    continue;
+                }
+
+
+                /*
+                 * Red QC results
+                 */
+
+                if (
+                    upper === "MISSING" ||
+                    upper === "EXTRA" ||
+                    upper === "UNREQUESTED" ||
+                    upper === "ISSUE" ||
+                    upper === "QC ISSUES FOUND" ||
+                    upper === "COUNT MISMATCH" ||
+                    upper === "DUPLICATE" ||
+                    upper.includes("COUNT MISMATCH") ||
+                    upper.includes("DUPLICATE")
+                ) {
+                    cell.s = {
+                        ...redStyle
+                    };
+                    continue;
+                }
+
+
+                /*
+                 * Summary labels
+                 */
+
+                if (
+                    upper === "STATUS" ||
+                    upper === "REQUESTED" ||
+                    upper === "ACTUAL" ||
+                    upper === "FOUND" ||
+                    upper === "MISSING" ||
+                    upper === "EXTRA" ||
+                    upper === "UNREQUESTED" ||
+                    upper === "COUNT MISMATCH" ||
+                    upper === "DUPLICATES"
+                ) {
+                    cell.s = {
+                        ...labelStyle
+                    };
+                }
+            }
+        }
+
+
+        /*
+         * Freeze the report header area.
+         */
+
+        worksheet["!freeze"] = {
+            xSplit: 0,
+            ySplit: 2
+        };
+
+
+        const workflowName =
+            workflow === "di"
+                ? "DI_SEND"
+                : "VFX_TURNOVER";
+
+        const date =
+            new Date()
+                .toISOString()
+                .slice(0, 10);
+
+        XLSX.writeFile(
+            workbook,
+            workflowName +
+                "_QC_" +
+                date +
+                ".xlsx"
+        );
+    }
+
+
+
+    function showDownloadQCButton() {
+        const button =
+            document.getElementById(
+                "downloadQCButton"
+            );
+
+        if (button) {
+            button.style.display =
+                "inline-block";
+        }
+    }
+
+
+
+    runButton.addEventListener(
+        "click",
+        async function () {
+
+            if (!requestFile || !actualFile) {
+                results.textContent =
+                    "Please select both files.";
+                return;
+            }
+
+            results.textContent =
+                "Reading request file...";
+
+            try {
+
+                /*
+                 * ==========================
+                 * DI SEND QC
+                 * ==========================
+                 */
+
+                if (workflow === "di") {
+
+                    if (
+                        !requestFile.name
+                            .toLowerCase()
+                            .endsWith(".xlsx")
+                    ) {
+                        throw new Error(
+                            "DI Send request must be an Excel (.xlsx) file."
+                        );
+                    }
+
+                    const requestedNames =
+                        await readDIExcelRequest(
+                            requestFile
+                        );
+
+                    results.textContent =
+                        "Reading actual DI send...";
+
+                    const actualNames =
+                        await readActualFile(
+                            actualFile
+                        );
+
+                    const diOutput =
+                        checkDISend(
+                            requestedNames,
+                            actualNames
+                        );
+
+                    renderDIReport(
+                        diOutput
+                    );
+
+                    showDownloadQCButton();
+
+                    return;
+                }
+
+
+                /*
+                 * ==========================
+                 * VENDOR TURNOVER QC
+                 * ==========================
+                 */
+
+                if (
+                    workflow === "vendor" &&
+                    requestFile.name
+                        .toLowerCase()
+                        .endsWith(".xlsx")
+                ) {
+
+                    const requestResult =
+                        await readExcelRequest(
+                            requestFile
+                        );
+
+                    if (requestResult.ambiguous) {
+
+                        showColumnChooser(
+                            requestResult.candidates,
+                            async function (shots) {
+
+                                results.textContent =
+                                    "Reading actual file...";
+
+                                try {
+
+                                    const actualNames =
+                                        await readActualFile(
+                                            actualFile
+                                        );
+
+                                    const qcOutput =
+                                        checkVendorTurnover(
+                                            shots,
+                                            actualNames
+                                        );
+
+                                    renderQCReport(
+                                        qcOutput
+                                    );
+
+                                    showDownloadQCButton();
+
+                                } catch (error) {
+
+                                    console.error(error);
+
+                                    results.textContent =
+                                        "ERROR\n\n" +
+                                        error.message;
+                                }
+
+                            }
+                        );
+
+                        return;
+                    }
+
+                    results.textContent =
+                        "Reading actual file...";
+
+                    const actualNames =
+                        await readActualFile(
+                            actualFile
+                        );
+
+                    const qcOutput =
+                        checkVendorTurnover(
+                            requestResult.shots,
+                            actualNames
+                        );
+
+                    renderQCReport(
+                        qcOutput
+                    );
+
+                    showDownloadQCButton();
+
+                    return;
+                }
+
+
+                results.textContent =
+                    "Request file selected:\n" +
+                    requestFile.name +
+                    "\n\n" +
+                    "Actual file selected:\n" +
+                    actualFile.name;
+
+            } catch (error) {
+
+                console.error(error);
+
+                results.textContent =
+                    "ERROR\n\n" +
+                    error.message;
+            }
+        }
+    );
+</script>
+</body>
+</html>
